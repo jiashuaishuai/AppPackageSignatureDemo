@@ -1,0 +1,119 @@
+apply plugin: 'com.android.application'
+def releaseTime() {
+    return new Date().format("yyyy-MM-dd", TimeZone.getTimeZone("UTC"))
+}
+android {
+    signingConfigs {
+        signing {
+            keyAlias 'demotest'
+            keyPassword 'zyz84521'
+            storeFile file('Demo')
+            storePassword 'jiashuai'
+        }
+    }
+    compileSdkVersion 26
+    defaultConfig {
+        applicationId "com.example.jiashuai.apppackagesignaturedemo"
+        minSdkVersion 15
+        targetSdkVersion 26
+        versionCode 1
+        versionName "1.0.0"
+        // dex突破65535的限制
+        multiDexEnabled true
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        release {
+            //boolean值，用于app配置，比如log的显示不显示，接口地址的切换等等
+            buildConfigField "boolean", "LOG_DEBUG", "false"
+            //是否进行zipalign优化
+            zipAlignEnabled true
+            //移除无用的resource文件
+            shrinkResources true
+            //是否混淆
+            minifyEnabled true
+            //混淆的配置文件
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            //签名
+            signingConfig signingConfigs.signing
+
+//            applicationVariants.all { variant ->
+            ////3.0之前使用each  后output.outputFile = new File(outputFile.parent, fileName)
+//                variant.outputs.each { output ->
+//                    def outputFile = output.outputFile
+//                    if (outputFile != null && outputFile.name.endsWith('.apk')) {
+//                        // 输出apk名称为zejian_v1.0_2015-01-15_wandoujia.apk
+//                        def fileName = "demoTest_v${defaultConfig.versionName}_${releaseTime()}_${variant.productFlavors[0].name}.apk"
+//                        output.outputFile = new File(outputFile.parent, fileName)
+//                    }
+//                }
+//            }
+            applicationVariants.all {variant ->
+                if(variant.buildType.name.equals("release")||variant.buildType.name.equals("debug")){
+                    //3.0之后使用all  直接修改outputName
+                    //https://stackoverflow.com/questions/44239235/android-gradle-3-0-0-alpha2-plugin-cannot-set-the-value-of-read-only-property
+                    /**
+                     * 使用all()而不是each()
+                     * 使用outputFileName而不是output.outputFile如果你只改变文件名（这是你的情况）
+                     */
+                    variant.outputs.all{
+                        def appName = "demoTest"
+                        def version = defaultConfig.versionName
+                        def time = releaseTime()
+                        def buildName = ""
+                        variant.productFlavors.each { product ->
+                                buildName = product.name
+                                def releaseApkName = "${appName}_v${version}_${time}_${buildName}.apk"
+                            outputFileName = releaseApkName
+                        }
+                    }
+                }
+            }
+        }
+        debug {
+            //boolean值，
+            buildConfigField "boolean", "LOG_DEBUG", "true"
+            //是否混淆
+            minifyEnabled false
+            //签名
+            signingConfig signingConfigs.signing
+        }
+    }
+    flavorDimensions "default"
+    productFlavors {
+        /**
+         *  gradle3.0以后必须指定dimension
+         * http://blog.csdn.net/small_technical/article/details/72782671
+         * dimension不知道啥意思待学习
+         */
+        kuan {
+            dimension "default"
+            manifestPlaceholders = [UMENG_CHANNEL_VALUE: "kuan"]
+        }
+        xiaomi {
+            dimension "default"
+            manifestPlaceholders = [UMENG_CHANNEL_VALUE: "xiaomi"]
+        }
+        qh360 {
+            dimension "default"
+            manifestPlaceholders = [UMENG_CHANNEL_VALUE: "qh360"]
+        }
+        baidu {
+            dimension "default"
+            manifestPlaceholders = [UMENG_CHANNEL_VALUE: "baidu"]
+        }
+        wandoujia {
+            dimension "default"
+            manifestPlaceholders = [UMENG_CHANNEL_VALUE: "wandoujia"]
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'com.android.support:appcompat-v7:26.1.0'
+    implementation 'com.android.support.constraint:constraint-layout:1.0.2'
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'com.android.support.test:runner:1.0.1'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
+}
